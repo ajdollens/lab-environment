@@ -1,0 +1,45 @@
+name: build-image
+run-name: Weekly image build
+on:
+  schedule:
+    - cron: '0 21* * 0'
+  push: 
+    branches: [main]
+    paths: ['packer/**','ansible/**']
+jobs:
+  builds-packer-images: 
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        image: [grafana]
+    steps: 
+      - name: Copy repo to runner
+        uses: actions/checkout@v7
+      
+      - name: Authenticate to GCP w/OIDC
+        uses: google-github-actions/auth@v3
+        with: 
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.SA_PACKER }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with: 
+          version: '>= ${{ vars.GCLOUD_SDK_VERSION }}'
+        
+      - name: Setup packer
+        uses: hashicorp/setup-packer@main
+        with: 
+          version: '>=${{vars.PACKER_VERSION }}'
+
+      - name: Install Ansible for use as Packer provisioner 
+        run: 'pipx install --include-deps "ansible-core==${{ vars.ANSIBLE_CORE_VERSION }}"'
+
+      - name: run 'packer init'
+        run: 'packer init packer/'
+
+      - name: run 'packer validate'
+        run: 'packer validate -var "image=${{ matrix.image }}" packer/'
+
+      - name: run 'packer build '
+        run: 'packer build -var "image=${{ matrix.image }}" packer/'
