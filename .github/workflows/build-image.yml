@@ -2,13 +2,19 @@ name: build-image
 run-name: Weekly image build
 on:
   schedule:
-    - cron: '0 21* * 0'
-  push: 
+    - cron: '0 21 * * 0'
+  push:
     branches: [main]
     paths: ['packer/**','ansible/**']
+permissions:
+  contents: read
+  id-token: write
 jobs:
-  builds-packer-images: 
+  builds-packer-images:
     runs-on: ubuntu-latest
+    env:
+      PKR_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+      PKR_VAR_git_sha: ${{ github.sha }}
     strategy:
       matrix: 
         image: [grafana]
@@ -39,7 +45,7 @@ jobs:
         run: 'packer init packer/'
 
       - name: run 'packer validate'
-        run: 'packer validate -var "image=${{ matrix.image }}" packer/'
+        run: 'packer validate -only="${{ matrix.image }}.*" packer/'
 
       - name: run 'packer build '
-        run: 'packer build -var "image=${{ matrix.image }}" packer/'
+        run: 'packer build -only="${{ matrix.image }}.*" packer/'

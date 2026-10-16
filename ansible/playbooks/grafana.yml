@@ -1,0 +1,26 @@
+---
+- name: Build Grafana image
+  hosts: all
+  become: true
+  vars:
+    grafana_version: "13.2.4"
+  tasks:
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+    
+    - name: Add grafana repo 
+      ansible.builtin.deb822_repository:
+        name: grafana_repo 
+        types: deb 
+        uris: https://apt.grafana.com
+        suites: stable 
+        components: main
+        signed_by: https://apt.grafana.com/gpg-full.key
+
+    - name: Install grafana 
+      ansible.builtin.apt:
+        name: "grafana={{ grafana_version }}"
+        state: present
+        update_cache: true 
