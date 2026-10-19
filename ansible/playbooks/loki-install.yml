@@ -1,11 +1,11 @@
 ---
-- name: Build Grafana image
-  hosts: all
-  become: true
+- name: Install loki 
+  hosts: all 
+  become: true 
   vars:
-    grafana_version: "13.2.4"
+    loki_version: "3.7.8"
 
-  tasks:
+  tasks: 
     - name: Add grafana repo
       ansible.builtin.deb822_repository:
         name: grafana_repo
@@ -14,10 +14,9 @@
         suites: stable
         components: main
         signed_by: https://apt.grafana.com/gpg-full.key
-
-    - name: Install grafana
+    
+    - name: install loki 
       ansible.builtin.apt:
-        name: "grafana={{ grafana_version }}"
-        state: present
-        update_cache: true
-
+        name: loki={{ loki_version }}
+        state: present 
+        update_cache: true 

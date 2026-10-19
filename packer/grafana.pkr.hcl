@@ -21,7 +21,7 @@ build {
 
   # Grafana install
   provisioner "ansible" {
-    playbook_file = "${path.root}/../ansible/playbooks/grafana.yml"
+    playbook_file = "${path.root}/../ansible/playbooks/grafana-install.yml"
     user          = "packer"
     use_proxy     = false
     extra_arguments = [
@@ -31,7 +31,7 @@ build {
 
   # Node_exporter install
   provisioner "ansible" {
-    playbook_file = "${path.root}/../ansible/playbooks/node_exporter.yml"
+    playbook_file = "${path.root}/../ansible/playbooks/alloy-install.yml"
     user          = "packer"
     use_proxy     = false
     extra_arguments = [

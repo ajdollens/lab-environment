@@ -1,0 +1,22 @@
+---
+- name: Install alloy agent 
+  hosts: all 
+  become: true 
+  vars:
+    alloy_version: "1.21"
+
+  tasks: 
+    - name: Add grafana repo
+      ansible.builtin.deb822_repository:
+        name: grafana_repo
+        types: deb
+        uris: https://apt.grafana.com
+        suites: stable
+        components: main
+        signed_by: https://apt.grafana.com/gpg-full.key
+    
+    - name: install alloy agent  
+      ansible.builtin.apt:
+        name: alloy={{ alloy_version }}
+        state: present 
+        update_cache: true 
