@@ -21,6 +21,13 @@ jobs:
     steps: 
       - name: Copy repo to runner
         uses: actions/checkout@v7
+
+      - name: Checkout ansible-lockdown repo 
+        uses: actions/checkout@v7
+        with:
+          repository: ansible-lockdown/UBUNTU24-CIS
+          ref: '1.7.0'
+          path: ansible/vendor/UBUNTU24-CIS
       
       - name: Authenticate to GCP w/OIDC
         uses: google-github-actions/auth@v3

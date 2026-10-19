@@ -1,0 +1,4 @@
+---
+ubtu24cis_firewall_package: "none"
+ubtu24cis_sudoers_exclude_nopasswd_list:
+  - "%google-sudoers"

@@ -1,0 +1,10 @@
+---
+# Collections needed by ansible-lockdown UBUNTU24-CIS. Pinned here because the
+# role's own requirements file pulls unpinned git HEADs.
+collections:
+  - name: community.general
+    version: "13.5.0"
+  - name: community.crypto
+    version: "3.5.0"
+  - name: ansible.posix
+    version: "2.2.2"

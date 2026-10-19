@@ -9,12 +9,46 @@ build {
     image_labels      = merge(local.common_labels, { role = "grafana" })
   }
 
+  # OS patching
+  provisioner "ansible" {
+    playbook_file = "${path.root}/../ansible/playbooks/base.yml"
+    user          = "packer"
+    use_proxy     = false
+    extra_arguments = [
+      "--extra-vars", "ansible_python_interpreter=/usr/bin/python3",
+    ]
+  }
+
+  # Grafana install
   provisioner "ansible" {
     playbook_file = "${path.root}/../ansible/playbooks/grafana.yml"
     user          = "packer"
     use_proxy     = false
     extra_arguments = [
       "--extra-vars", "ansible_python_interpreter=/usr/bin/python3",
+    ]
+  }
+
+  # Node_exporter install
+  provisioner "ansible" {
+    playbook_file = "${path.root}/../ansible/playbooks/node_exporter.yml"
+    user          = "packer"
+    use_proxy     = false
+    extra_arguments = [
+      "--extra-vars", "ansible_python_interpreter=/usr/bin/python3",
+    ]
+  }
+
+  # CIS lockdown runs last so it hardens everything above and can't block
+  # earlier provisioners. Role is checked out into ansible/vendor/ by CI.
+  provisioner "ansible" {
+    playbook_file = "${path.root}/../ansible/vendor/UBUNTU24-CIS/site.yml"
+    galaxy_file   = "${path.root}/../ansible/requirements.yml"
+    user          = "packer"
+    use_proxy     = false
+    extra_arguments = [
+      "--extra-vars", "ansible_python_interpreter=/usr/bin/python3",
+      "--extra-vars", "@${path.root}/../ansible/vars/cis.yml",
     ]
   }
 }
