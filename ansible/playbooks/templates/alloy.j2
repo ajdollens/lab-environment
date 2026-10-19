@@ -1,0 +1,38 @@
+// Deployed to /etc/alloy/config.alloy
+//
+// Host metrics, replacing node_exporter. Alloy doesn't serve these on
+// /metrics; Prometheus scrapes them from Alloy's HTTP server (port 12345) at:
+//   /api/v0/component/prometheus.exporter.unix.node/metrics
+prometheus.exporter.unix "node" { }
+
+logging {
+  level  = "{{ alloy_log_level | default('info') }}"
+  format = "logfmt"
+}
+
+prometheus.scrape "scrape_metrics" {
+  targets         = prometheus.exporter.unix.local_system.targets
+  forward_to      = [prometheus.relabel.filter_metrics.receiver]
+  scrape_interval = "10s"
+}
+
+prometheus.relabel "filter_metrics" {
+  rule {
+    action        = "drop"
+    source_labels = ["env"]
+    regex         = "dev"
+  }
+
+  forward_to = [prometheus.remote_write.metrics_service.receiver]
+}
+
+prometheus.remote_write "metrics_service" {
+    endpoint {
+        url = "http://{{ prometheus_target_addr}}:9090/api/v1/write"
+
+        // basic_auth {
+        //   username = "admin"
+        //   password = "admin"
+        // }
+    }
+}

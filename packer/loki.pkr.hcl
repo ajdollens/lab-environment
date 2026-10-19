@@ -1,11 +1,11 @@
-build{  
+build {
   name = "loki"
 
   source "source.googlecompute.base" {
     name              = "loki"
     image_name        = "loki-${local.timestamp}"
     image_family      = "loki-candidate"
-    image_description = "Grafana built from ${var.git_sha}" 
+    image_description = "Loki built from ${var.git_sha}" 
     image_labels      = merge(local.common_labels, { role = "loki" })
   }
   
@@ -29,7 +29,7 @@ build{
     ]
   }
 
-  # Node_exporter install
+  # Alloy agent install
   provisioner "ansible" {
     playbook_file = "${path.root}/../ansible/playbooks/alloy-install.yml"
     user          = "packer"

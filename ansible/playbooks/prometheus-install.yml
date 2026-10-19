@@ -1,0 +1,74 @@
+---
+# Prometheus isn't in the Grafana apt repo and Ubuntu's package lags far
+# behind, so install the upstream release binary.
+- name: Install prometheus
+  hosts: all
+  become: true
+  vars:
+    prometheus_version: "3.15.0"
+    prometheus_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    prometheus_release: "prometheus-{{ prometheus_version }}.linux-{{ prometheus_arch }}"
+    prometheus_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}"
+    prometheus_user: prometheus
+    prometheus_config_dir: /etc/prometheus
+    prometheus_data_dir: /var/lib/prometheus
+
+  tasks:
+    - name: Create prometheus system user
+      ansible.builtin.user:
+        name: "{{ prometheus_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+
+    - name: Create config directory
+      ansible.builtin.file:
+        path: "{{ prometheus_config_dir }}"
+        state: directory
+        owner: root
+        group: "{{ prometheus_user }}"
+        mode: "0750"
+
+    - name: Create data directory
+      ansible.builtin.file:
+        path: "{{ prometheus_data_dir }}"
+        state: directory
+        owner: "{{ prometheus_user }}"
+        group: "{{ prometheus_user }}"
+        mode: "0750"
+
+    - name: Download prometheus
+      ansible.builtin.get_url:
+        url: "{{ prometheus_url }}/{{ prometheus_release }}.tar.gz"
+        dest: "/tmp/{{ prometheus_release }}.tar.gz"
+        checksum: "sha256:{{ prometheus_url }}/sha256sums.txt"
+        mode: "0644"
+
+    - name: Unpack prometheus
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ prometheus_release }}.tar.gz"
+        dest: /tmp/
+        remote_src: true
+
+    - name: Install prometheus binaries
+      ansible.builtin.copy:
+        src: "/tmp/{{ prometheus_release }}/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - prometheus
+        - promtool
+
+    - name: Install prometheus service
+      ansible.builtin.template:
+        src: prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    # Not enabled: prometheus.yml is written at runtime, which then enables
+    # and starts the service.

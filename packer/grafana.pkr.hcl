@@ -29,7 +29,7 @@ build {
     ]
   }
 
-  # Node_exporter install
+  # Alloy agent install
   provisioner "ansible" {
     playbook_file = "${path.root}/../ansible/playbooks/alloy-install.yml"
     user          = "packer"
