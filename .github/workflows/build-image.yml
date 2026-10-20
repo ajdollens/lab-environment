@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix: 
-        image: [grafana, loki, prometheus]
+        image: [grafana, loki, prometheus, netbox]
     steps: 
       - name: Copy repo to runner
         uses: actions/checkout@v7
