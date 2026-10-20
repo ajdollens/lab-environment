@@ -15,6 +15,10 @@ jobs:
     env:
       PKR_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
       PKR_VAR_git_sha: ${{ github.sha }}
+      PACKER_VERSION: '1.16.1'
+      GCLOUD_SDK_VERSION: '590.0.0'
+      ANSIBLE_CORE_VERSION: '2.21.5'
+
     strategy:
       matrix: 
         image: [grafana, loki, prometheus]
@@ -33,20 +37,19 @@ jobs:
         uses: google-github-actions/auth@v3
         with: 
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.SA_PACKER }}
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
         with: 
-          version: '>= ${{ vars.GCLOUD_SDK_VERSION }}'
+          version: '${{ env.GCLOUD_SDK_VERSION }}'
         
       - name: Setup packer
-        uses: hashicorp/setup-packer@main
+        uses: hashicorp/setup-packer@v3
         with: 
-          version: '>=${{vars.PACKER_VERSION }}'
+          version: '${{ env.PACKER_VERSION }}'
 
       - name: Install Ansible for use as Packer provisioner 
-        run: 'pipx install --include-deps "ansible-core==${{ vars.ANSIBLE_CORE_VERSION }}"'
+        run: 'pipx install --include-deps "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}"'
 
       - name: run 'packer init'
         run: 'packer init packer/'
