@@ -29,6 +29,12 @@ variable "git_sha" {
   description = "Commit the image was built from, set by CI"
 }
 
+variable "run_id" {
+  type        = string
+  default     = "local"
+  description = "CI run ID; names the build VM/disk so cleanup can find them"
+}
+
 locals {
   timestamp = formatdate("YYYYMMDDhhmmss", timestamp())
 

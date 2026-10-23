@@ -12,15 +12,20 @@ permissions:
 jobs:
   builds-packer-images:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       PKR_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
       PKR_VAR_git_sha: ${{ github.sha }}
+      PKR_VAR_run_id: ${{ github.run_id }}
+      PKR_VAR_zone: us-central1-a
       PACKER_VERSION: '1.16.1'
       GCLOUD_SDK_VERSION: '590.0.0'
       ANSIBLE_CORE_VERSION: '2.21.5'
 
     strategy:
-      matrix: 
+      # One image failing shouldn't cancel (and orphan) the others
+      fail-fast: false
+      matrix:
         image: [grafana, loki, prometheus, netbox, containerlab]
     steps: 
       - name: Copy repo to runner
@@ -34,6 +39,7 @@ jobs:
           path: ansible/vendor/UBUNTU24-CIS
       
       - name: Authenticate to GCP w/OIDC
+        id: auth
         uses: google-github-actions/auth@v3
         with: 
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
@@ -60,3 +66,23 @@ jobs:
 
       - name: run 'packer build '
         run: 'packer build -only="${{ matrix.image }}.*" packer/'
+
+      # Packer cleans up on a normal exit, but not when the job is cancelled or
+      # killed. always() runs this even then; skip it if we never authenticated
+      # (nothing can have been created).
+      - name: Delete leftover Packer VM and disk
+        if: always() && steps.auth.outcome == 'success'
+        env:
+          NAME: packer-${{ github.run_id }}-${{ matrix.image }}
+          PROJECT: ${{ env.PKR_VAR_project_id }}
+          ZONE: ${{ env.PKR_VAR_zone }}
+        run: |
+          # Instance first: a disk can't be deleted while attached
+          for kind in instances disks; do
+            found=$(gcloud compute "$kind" list --project "$PROJECT" \
+              --filter="name=$NAME AND zone:$ZONE" --format="value(name)")
+            if [ -n "$found" ]; then
+              echo "Deleting leftover $kind/$NAME"
+              gcloud compute "$kind" delete "$NAME" --zone "$ZONE" --project "$PROJECT" --quiet
+            fi
+          done
