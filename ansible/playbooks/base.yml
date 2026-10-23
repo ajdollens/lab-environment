@@ -7,3 +7,14 @@
       ansible.builtin.apt:
         update_cache: true
         upgrade: dist
+
+    # Pre-installed so the CIS role's initial package facts include auditd.
+    # Works around UBUNTU24-CIS 1.7.0 bug (issue #196): with AIDE rules 6.3.x
+    # disabled, facts are never refreshed after the role installs auditd and
+    # the "Stop auditd process" handler fails. Fixed upstream after 1.7.0.
+    - name: Install auditd
+      ansible.builtin.apt:
+        name:
+          - auditd
+          - audispd-plugins
+        state: present
