@@ -3,6 +3,7 @@ build{
   source "source.googlecompute.base" {
     name              = "containerlab"
     image_name        = "containerlab-${local.timestamp}"
+    instance_name     = "packer-${var.run_id}-containerlab"
     image_family      = "containerlab-candidate"
     image_description = "containerlab built from ${var.git_sha}" 
     image_labels      = merge(local.common_labels, { role = "containerlab" })

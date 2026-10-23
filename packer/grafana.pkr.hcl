@@ -4,6 +4,7 @@ build {
   source "source.googlecompute.base" {
     name              = "grafana"
     image_name        = "grafana-${local.timestamp}"
+    instance_name     = "packer-${var.run_id}-grafana"
     image_family      = "grafana-candidate"
     image_description = "Grafana built from ${var.git_sha}"
     image_labels      = merge(local.common_labels, { role = "grafana" })

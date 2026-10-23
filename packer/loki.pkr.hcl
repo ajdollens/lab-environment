@@ -4,6 +4,7 @@ build {
   source "source.googlecompute.base" {
     name              = "loki"
     image_name        = "loki-${local.timestamp}"
+    instance_name     = "packer-${var.run_id}-loki"
     image_family      = "loki-candidate"
     image_description = "Loki built from ${var.git_sha}" 
     image_labels      = merge(local.common_labels, { role = "loki" })

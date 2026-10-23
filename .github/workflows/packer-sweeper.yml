@@ -1,0 +1,43 @@
+name: packer-sweeper
+# Safety net for build-image: deletes Packer build VMs and disks that outlived
+# any real build, e.g. when a runner died before its cleanup step could run.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      GCLOUD_SDK_VERSION: '590.0.0'
+      # Longer than build-image's 60 min job timeout, so in-progress builds are safe
+      MAX_AGE: PT3H
+    steps:
+      - name: Authenticate to GCP w/OIDC
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          project_id: ${{ env.PROJECT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: '${{ env.GCLOUD_SDK_VERSION }}'
+
+      - name: Delete stale Packer VMs and disks
+        run: |
+          # Instances first: a disk can't be deleted while attached
+          for kind in instances disks; do
+            gcloud compute "$kind" list --project "$PROJECT" \
+              --filter="name~^packer- AND creationTimestamp<-$MAX_AGE" \
+              --format="value(name,zone.basename())" |
+            while read -r name zone; do
+              echo "Deleting stale $kind/$name in $zone"
+              gcloud compute "$kind" delete "$name" --zone "$zone" --project "$PROJECT" --quiet
+            done
+          done

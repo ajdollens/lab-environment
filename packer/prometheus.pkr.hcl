@@ -4,6 +4,7 @@ build {
   source "source.googlecompute.base" {
     name              = "prometheus"
     image_name        = "prometheus-${local.timestamp}"
+    instance_name     = "packer-${var.run_id}-prometheus"
     image_family      = "prometheus-candidate"
     image_description = "Prometheus built from ${var.git_sha}" 
     image_labels      = merge(local.common_labels, { role = "prometheus" })

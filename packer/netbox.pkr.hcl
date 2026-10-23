@@ -3,6 +3,7 @@ build{
   source "source.googlecompute.base" {
     name              = "netbox"
     image_name        = "netbox-${local.timestamp}"
+    instance_name     = "packer-${var.run_id}-netbox"
     image_family      = "netbox-candidate"
     image_description = "Netbox built from ${var.git_sha}" 
     image_labels      = merge(local.common_labels, { role = "netbox" })
