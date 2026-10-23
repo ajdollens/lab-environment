@@ -1,0 +1,22 @@
+---
+- name: Install loki 
+  hosts: all 
+  become: true 
+  vars:
+    loki_version: "3.7.8"
+
+  tasks: 
+    - name: Add grafana repo
+      ansible.builtin.deb822_repository:
+        name: grafana_repo
+        types: deb
+        uris: https://apt.grafana.com
+        suites: stable
+        components: main
+        signed_by: https://apt.grafana.com/gpg-full.key
+    
+    - name: install loki 
+      ansible.builtin.apt:
+        name: loki={{ loki_version }}
+        state: present 
+        update_cache: true 

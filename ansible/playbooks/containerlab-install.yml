@@ -1,0 +1,13 @@
+---
+- name: Install containerlab 
+  hosts: all 
+  become: True 
+  
+  tasks:
+    - name: Install containerlab via installation script 
+      ansible.builtin.command: bash -c "$(curl -sL https://get.containerlab.dev)"
+        
+    - name: Add clab-user
+      ansible.builtin.user:
+        name: clab-user
+        group: clab-admins

@@ -1,0 +1,127 @@
+---
+# Image build for NetBox, following https://netboxlabs.com/docs/netbox/installation/
+# Installs everything that doesn't need secrets or a database. Runtime still has
+# to: create the DB and user, write configuration.py, run migrate/collectstatic,
+# create a superuser, template the nginx site, then enable/start netbox,
+# netbox-rq and nginx.
+- name: Install Netbox and dependencies
+  hosts: all
+  become: true
+  vars:
+    # Postgres and Redis come from Ubuntu's archive. Pin the major version via
+    # the package name; exact versions get pulled from the archive when Ubuntu
+    # ships security fixes, which would break the weekly rebuild.
+    postgres_major: "16"            # NetBox needs >= 15
+    netbox_version: "4.7.3"
+    netbox_sha256: "7b6bd0d792fd523bd57970b4b0fa61e92007cb33597d60dc1fd68a2a13e8073b"
+    netbox_user: netbox
+    netbox_root: /opt/netbox
+    netbox_release_dir: "/opt/netbox-{{ netbox_version }}"
+
+  tasks:
+    - name: Install system packages
+      ansible.builtin.apt:
+        name:
+          # Postgres, Redis and the web server
+          - "postgresql-{{ postgres_major }}"
+          - redis-server
+          - nginx
+          # Build dependencies from the NetBox docs
+          - python3
+          - python3-pip
+          - python3-venv
+          - python3-dev
+          - build-essential
+          - libxml2-dev
+          - libxslt1-dev
+          - libffi-dev
+          - libpq-dev
+          - libssl-dev
+          - zlib1g-dev
+        state: present
+        update_cache: true
+
+    - name: Create netbox system user
+      ansible.builtin.user:
+        name: "{{ netbox_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+
+    # GitHub's tag archives are stable, so the checksum is pinned here. Update
+    # it with netbox_version: sha256sum of the .tar.gz for the new tag.
+    - name: Download netbox
+      ansible.builtin.get_url:
+        url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox_version }}.tar.gz"
+        dest: "/tmp/netbox-{{ netbox_version }}.tar.gz"
+        checksum: "sha256:{{ netbox_sha256 }}"
+        mode: "0644"
+
+    - name: Unpack netbox
+      ansible.builtin.unarchive:
+        src: "/tmp/netbox-{{ netbox_version }}.tar.gz"
+        dest: /opt/
+        remote_src: true
+        creates: "{{ netbox_release_dir }}"
+
+    # Versioned dir + symlink, as the docs recommend, so upgrades are a symlink swap
+    - name: Point /opt/netbox at this release
+      ansible.builtin.file:
+        src: "{{ netbox_release_dir }}"
+        dest: "{{ netbox_root }}"
+        state: link
+
+    - name: Give netbox user ownership of writable directories
+      ansible.builtin.file:
+        path: "{{ netbox_root }}/netbox/{{ item }}"
+        owner: "{{ netbox_user }}"
+        recurse: true
+      loop:
+        - media
+        - reports
+        - scripts
+
+    - name: Create virtualenv and install python requirements
+      ansible.builtin.pip:
+        requirements: "{{ netbox_root }}/requirements.txt"
+        virtualenv: "{{ netbox_root }}/venv"
+        virtualenv_command: python3 -m venv
+
+    - name: Install gunicorn config
+      ansible.builtin.copy:
+        src: "{{ netbox_root }}/contrib/gunicorn.py"
+        dest: "{{ netbox_root }}/gunicorn.py"
+        remote_src: true
+        mode: "0644"
+
+    - name: Install netbox systemd units
+      ansible.builtin.copy:
+        src: "{{ netbox_root }}/contrib/{{ item }}"
+        dest: "/etc/systemd/system/{{ item }}"
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - netbox.service
+        - netbox-rq.service
+
+    # Not enabled: they need configuration.py, written at runtime
+    - name: Load netbox units
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    # The package enables nginx with a default welcome site. The real site is
+    # templated at runtime, so don't serve anything until then.
+    - name: Remove nginx default site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Keep nginx disabled in the image
+      ansible.builtin.systemd_service:
+        name: nginx
+        enabled: false
+
+    # Postgres and Redis stay enabled: they listen on localhost only and need
+    # no runtime config to start.
