@@ -2,3 +2,8 @@
 ubtu24cis_firewall_package: "none"
 ubtu24cis_sudoers_exclude_nopasswd_list:
   - "%google-sudoers"
+
+# AIDE (file integrity) skipped: accepted exception to 6.3.x
+ubtu24cis_rule_6_3_1: false   # AIDE installed/configured
+ubtu24cis_rule_6_3_2: false   # periodic integrity check
+ubtu24cis_rule_6_3_3: false   # AIDE protection of audit tools
