@@ -52,6 +52,18 @@ jobs:
       - name: Install Ansible for use as Packer provisioner 
         run: 'pipx install --include-deps "ansible-core==${{ env.ANSIBLE_CORE_VERSION }}"'
 
+      - name: Debug IAP
+        if: failure()
+        run: |
+          gcloud auth list
+          gcloud services list --enabled | grep -E 'iap|compute'
+          NAME=$(gcloud compute instances list --filter="name~^packer-" --format="value(name)" --limit 1)
+          echo "Instance: $NAME"
+          gcloud compute instances describe "$NAME" --zone us-central1-a --format="value(status,networkInterfaces[0].network)"
+          timeout 30 gcloud compute start-iap-tunnel "$NAME" 22 --local-host-port=localhost:2222 \
+            --zone us-central1-a --verbosity=debug || true
+          gcloud compute instances delete "$NAME" --zone us-central1-a --quiet
+
       - name: run 'packer init'
         run: 'packer init packer/'
 
