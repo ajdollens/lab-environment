@@ -37,6 +37,7 @@ jobs:
         uses: google-github-actions/auth@v3
         with: 
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          project_id: ${{ env.PKR_VAR_project_id }}
 
       - name: Setup Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
