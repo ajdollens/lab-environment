@@ -2,10 +2,19 @@
 - name: Install containerlab 
   hosts: all 
   become: True 
-  
+  vars:
+    container_lab_version: "0.82.0"
   tasks:
-    - name: Install containerlab via installation script 
-      ansible.builtin.command: bash -c "$(curl -sL https://get.containerlab.dev)"
+    - name: add containerlab repo 
+      ansible.builtin.apt_repository:
+        repo: "deb [trusted=yes] https://netdevops.fury.site/apt/ /"
+        filename: netdevops
+        state: present
+
+    - name: install containerlab 
+      ansible.builtin.apt:
+        name: "containerlab={{ container_lab_version }}"
+        state: present 
         
     - name: Add clab-user
       ansible.builtin.user:
