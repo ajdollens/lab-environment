@@ -16,7 +16,7 @@
         name: "containerlab={{ container_lab_version }}"
         state: present 
         
-    - name: Add clab-user
+    - name: Add clab_user
       ansible.builtin.user:
-        name: clab-user
-        group: clab-admins
+        name: clab_user
+        group: clab_admins
