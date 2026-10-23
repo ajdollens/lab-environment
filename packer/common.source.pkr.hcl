@@ -13,6 +13,8 @@ source "googlecompute" "base" {
   disk_type    = "pd-balanced"
 
   # SSH through IAP; firewall must allow tcp:22 from 35.235.240.0/20 to this tag
+  iap_tunnel_launch_wait = "60s"
+  ssh_timeout = "10m"
   ssh_username = "packer"
   use_iap      = true
   tags         = ["packer-build"]
